@@ -1,45 +1,192 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import QuoteContainer from './components/QuoteContainer';
+import {
+  IoAlarmOutline as TimeIcon,
+  IoSpeedometerOutline as SpeedIcon,
+  IoLocateOutline as AccuracyIcon,
+  IoCloseCircleOutline as ErrorsIcon,
+  IoRefreshOutline as RefreshIcon,
+} from 'react-icons/io5';
+import LoadingCard from './components/Loading';
+import ErrorCard from './components/Error';
+import { IconType } from 'react-icons';
+import useAppState from './store';
+import { refresh, Status } from './store/reducer';
+import Actions from './store/actions';
+
+interface Stats {
+  icon: IconType;
+  value: number;
+  mark: string;
+}
 
 function App() {
+  const [state, dispatch] = useAppState();
+  const [timeUpdater, setTimeUpdater] = useState<NodeJS.Timer | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // calculate stats
+  let stats: Stats[];
+
+  if (state.status === Status.ready || state.status === Status.finished) {
+    const speed = Math.round(state.typed.length / 5 / (state.time / 60));
+    const accuracy =
+      Math.round(
+        100 - (state.errors / (state.typed.length - state.errors || 1)) * 100,
+      ) || 0;
+
+    stats = [
+      {
+        icon: SpeedIcon,
+        value: (isFinite(speed) && speed) || 0,
+        mark: 'WPM',
+      },
+      {
+        icon: AccuracyIcon,
+        value: accuracy,
+        mark: '%',
+      },
+      { icon: TimeIcon, value: Math.round(state.time), mark: 'Sec' },
+      { icon: ErrorsIcon, value: state.errors, mark: 'Char' },
+    ];
+  }
+
+  // start
+  useEffect(() => {
+    refresh(dispatch);
+  }, []);
+
+  // start timer
+  useEffect(() => {
+    if (state.typed && !timeUpdater) {
+      setTimeUpdater(setInterval(() => dispatch({ type: Actions.tick }), 100));
+    }
+  }, [state.typed]);
+
+  // stop timer
+  useEffect(() => {
+    if (state.status === Status.finished && timeUpdater) {
+      clearInterval(timeUpdater);
+      setTimeUpdater(null);
+    }
+  }, [state.status]);
+
+  // add an event lisetner on the return button to refresh
+  useEffect(() => {
+    const buttonEl = buttonRef.current!;
+
+    const refreshHanlder = (e: KeyboardEvent) => {
+      if (e.keyCode === 13) buttonEl.click();
+    };
+
+    document.addEventListener('keydown', refreshHanlder);
+
+    return () => {
+      document.removeEventListener('keydown', refreshHanlder);
+    };
+  }, []);
+
+  // textarea auto focus
+  useEffect(() => {
+    const textareaEl = textareaRef.current!;
+
+    if (state.quote) textareaEl.focus();
+  }, [state.quote]);
+
+  // button auto focus
+  useEffect(() => {
+    const buttonEl = buttonRef.current!;
+
+    if (state.status === Status.finished) buttonEl.focus();
+  }, [state.status]);
+
+  // updating is typing state
+  useEffect(() => {
+    if (state.typed !== null) {
+      setIsTyping(true);
+
+      const timeout = setTimeout(() => setIsTyping(false), 500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [state.typed]);
+
   return (
-    <div className="flex flex-col h-full items-center justify-center text-white bg-gradient-to-br from-gray-600 via-teal-700 to-gray-800">
-      <div className="flex items-center animate-bounce">
-        <svg viewBox="0 0 64 64" className="w-32 fill-current text-indigo-500">
-          <path d="M52.275 22.147a63.008 63.008 0 0 0-2.025-.637c.112-.462.212-.925.313-1.387 1.537-7.45.524-13.437-2.888-15.412-3.287-1.888-8.65.075-14.075 4.8-.538.462-1.063.95-1.563 1.437-.337-.325-.687-.65-1.037-.962-5.688-5.05-11.387-7.175-14.8-5.188-3.275 1.9-4.25 7.537-2.875 14.587.138.7.288 1.388.463 2.088-.8.224-1.588.474-2.325.737C4.788 24.522 0 28.172 0 31.947c0 3.9 5.1 7.812 12.037 10.187.563.187 1.125.375 1.7.537a45.04 45.04 0 0 0-.5 2.25c-1.312 6.937-.287 12.437 2.988 14.324 3.375 1.95 9.05-.05 14.575-4.887.438-.387.875-.787 1.312-1.212.55.537 1.125 1.05 1.7 1.55 5.35 4.6 10.638 6.462 13.9 4.574 3.375-1.95 4.475-7.862 3.05-15.061a52.467 52.467 0 0 0-.374-1.688c.4-.112.787-.237 1.175-.362C58.775 39.772 64 35.909 64 31.947c0-3.787-4.925-7.462-11.725-9.8zM35.362 11.536c4.65-4.05 8.988-5.638 10.963-4.5 2.112 1.212 2.925 6.112 1.6 12.55a20.19 20.19 0 0 1-.287 1.249 63.994 63.994 0 0 0-8.413-1.325 63.153 63.153 0 0 0-5.325-6.637c.488-.463.962-.9 1.462-1.337zM20.9 38.434a86.067 86.067 0 0 0 1.975 3.237 56.605 56.605 0 0 1-5.8-.937c.55-1.8 1.238-3.662 2.038-5.562a82.583 82.583 0 0 0 1.787 3.262zm-3.787-15.037c1.8-.4 3.712-.725 5.7-.975a73.891 73.891 0 0 0-1.925 3.175 73.904 73.904 0 0 0-1.776 3.25 59.594 59.594 0 0 1-2-5.45zm3.425 8.612a78.537 78.537 0 0 1 2.674-5.074 75.374 75.374 0 0 1 3.05-4.863A78.408 78.408 0 0 1 32 21.86c1.95 0 3.875.075 5.737.212a87.325 87.325 0 0 1 3.038 4.838 85.138 85.138 0 0 1 2.712 5.05 82.936 82.936 0 0 1-2.7 5.1 85.374 85.374 0 0 1-3.024 4.874c-1.863.137-3.8.2-5.763.2-1.962 0-3.863-.063-5.7-.175a76.007 76.007 0 0 1-5.762-9.95zm22.574 6.4a86.342 86.342 0 0 0 1.825-3.337c.8 1.812 1.5 3.65 2.113 5.537-1.938.437-3.9.775-5.875 1a83.722 83.722 0 0 0 1.938-3.2zm1.8-9.562c-.587-1.1-1.187-2.2-1.812-3.275a81.255 81.255 0 0 0-1.913-3.15c2.013.25 3.938.588 5.738 1a55.315 55.315 0 0 1-2.012 5.425zM32.026 14.785a54.888 54.888 0 0 1 3.7 4.475 81.997 81.997 0 0 0-7.438 0 63.146 63.146 0 0 1 3.738-4.475zm-14.5-7.662c2.1-1.225 6.763.525 11.675 4.875.313.275.625.575.95.875a63.504 63.504 0 0 0-5.362 6.637c-2.826.25-5.625.688-8.4 1.3-.163-.637-.3-1.287-.438-1.937-1.175-6.05-.4-10.612 1.575-11.75zm-3.062 32.949a31.894 31.894 0 0 1-1.55-.488c-2.663-.837-5.688-2.162-7.876-3.9a5.609 5.609 0 0 1-2.35-3.737c0-2.287 3.95-5.212 9.65-7.2.713-.25 1.438-.475 2.163-.687a66.462 66.462 0 0 0 3.063 7.95 68.322 68.322 0 0 0-3.1 8.062zM29.038 52.32a22.88 22.88 0 0 1-7.05 4.412 5.533 5.533 0 0 1-4.413.163c-1.987-1.15-2.813-5.563-1.688-11.5.138-.7.288-1.4.463-2.087 2.8.6 5.625 1.012 8.487 1.225a65.963 65.963 0 0 0 5.4 6.674c-.4.388-.8.763-1.2 1.113zm3.062-3.037a59.114 59.114 0 0 1-3.788-4.538c1.2.05 2.438.075 3.688.075 1.288 0 2.55-.025 3.8-.087a53.904 53.904 0 0 1-3.7 4.55zm16.337 3.75a5.555 5.555 0 0 1-2.062 3.912c-1.987 1.15-6.225-.35-10.8-4.275-.525-.45-1.05-.938-1.588-1.438a61.833 61.833 0 0 0 5.276-6.7 61.623 61.623 0 0 0 8.525-1.312c.125.513.237 1.025.337 1.525.612 2.7.712 5.512.313 8.287zm2.276-13.437c-.35.112-.7.225-1.063.325a63.494 63.494 0 0 0-3.188-7.975 63.177 63.177 0 0 0 3.063-7.862c.65.187 1.275.387 1.875.587 5.825 2 9.913 4.975 9.913 7.25 0 2.45-4.363 5.612-10.6 7.675zM32 37.722a5.724 5.724 0 0 0 5.725-5.725A5.724 5.724 0 0 0 32 26.272a5.724 5.724 0 0 0-5.725 5.725A5.724 5.724 0 0 0 32 37.722z" />
-        </svg>
-        <span className="text-6xl pl-5 pr-2">+</span>
-        <svg
-          className="w-32 fill-current text-indigo-500"
-          viewBox="0 0 64 64"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M13.5 11.1C15.3 3.9 19.8.3 27 .3c10.8 0 12.15 8.1 17.55 9.45 3.6.9 6.75-.45 9.45-4.05-1.8 7.2-6.3 10.8-13.5 10.8-10.8 0-12.15-8.1-17.55-9.45-3.6-.9-6.75.45-9.45 4.05zM0 27.3c1.8-7.2 6.3-10.8 13.5-10.8 10.8 0 12.15 8.1 17.55 9.45 3.6.9 6.75-.45 9.45-4.05-1.8 7.2-6.3 10.8-13.5 10.8-10.8 0-12.15-8.1-17.55-9.45-3.6-.9-6.75.45-9.45 4.05z"
-            transform="translate(5 16)"
-          ></path>
-        </svg>
-      </div>
-      <p className="mt-6 tracking-wide">
-        Edit <code>src/App.jsx</code> and save to reload.
-      </p>
-      <div className="mt-4 flex justify-center">
-        <a
-          className="bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="ml-4 bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-4 rounded"
-          href="https://tailwindcss.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Tailwind
-        </a>
-      </div>
+    <div className="w-full max-w-screen-sm space-y-4 p-4 mx-auto mt-6">
+      <main className="w-full rounded-md rounded-b-none border-b border-blue-500 bg-blue-50">
+        {(state.status === Status.ready ||
+          state.status === Status.finished) && (
+          <QuoteContainer
+            quote={state.quote}
+            typed={state.typed}
+            isTyping={isTyping}
+          />
+        )}
+        {state.status === Status.loading && <LoadingCard />}
+        {state.status === Status.error && <ErrorCard />}
+      </main>
+
+      {(state.status === Status.ready || state.status === Status.finished) && (
+        <div className="flex space-x-4 w-max mx-auto">
+          {stats!.map(({ icon: Icon, value, mark }, index) => (
+            <div
+              key={index}
+              className="flex space-x-1 items-center text-gray-700"
+            >
+              <Icon size={30} />
+              <span className="text-md font-semibold">
+                {value} {mark}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button
+        className="btn w-max mx-auto"
+        disabled={
+          state.status === Status.loading ||
+          Boolean(state.status === Status.ready && state.typed)
+        }
+        onClick={() => {
+          refresh(dispatch);
+        }}
+        ref={buttonRef}
+      >
+        <RefreshIcon size={24} />
+        <span>Refresh</span>
+      </button>
+
+      <textarea
+        id="input"
+        className="w-full rounded-md rounded-t-none border-t border-gray-400 bg-blue-50 resize-none h-40 text-gray-700 p-2 focus:outline-none
+      hover:border-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:border-gray-500 disabled:cursor-not-allowed"
+        disabled={state.status !== Status.ready}
+        value={state.status === Status.ready ? state.typed : ''}
+        onChange={e => {
+          if (state.status === Status.ready) {
+            const value = e.target.value;
+
+            if (
+              value.length > state.typed.length &&
+              value[value.length - 1] !== state.quote[value.length - 1]
+            ) {
+              dispatch({ type: Actions.commit });
+            }
+
+            dispatch({
+              type: Actions.type,
+              payload: value,
+            });
+
+            if (value.length === state.quote.length)
+              dispatch({ type: Actions.finish });
+          }
+        }}
+        ref={textareaRef}
+      ></textarea>
     </div>
   );
 }

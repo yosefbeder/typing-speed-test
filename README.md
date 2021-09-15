@@ -1,22 +1,14 @@
-# cra-template-tailwindcss-typescript
+# Typing Speed Test
 
-A streamlined [Tailwind CSS](https://tailwindcss.com) template for [Create React App](https://github.com/facebook/create-react-app) in [TypeScript](https://www.typescriptlang.org/).
+A typing speed test with random quotes.
 
-> This template installs and sets up [Tailwind CSS](https://tailwindcss.com) with TypeScript support.
+### Stuff used to create the app:
 
-## Usage
+- [`useReducer`](https://reactjs.org/docs/hooks-reference.html#usereducer) hook for state management.
+- [tailwindcss](https://tailwindcss.com/) for designing the app.
+- [Quote Garden](https://pprathameshmore.github.io/QuoteGarden/) API to generate random quotes.
+- [LOADING.IO](https://loading.io/icon/tag/emoji) to get loading and error pages emojis.
 
-```bash
-npx create-react-app --template tailwindcss-typescript
-```
+### License
 
-## Credits
-
-This project was made possible thanks to the following projects.
-
-1. [GeoffSelby/cra-template-tailwindcss](https://github.com/GeoffSelby/cra-template-tailwindcss) - A streamlined Tailwind CSS template for Create React App (in JavaScript).
-2. [cra-template-typescript](https://github.com/facebook/create-react-app/tree/master/packages/cra-template-typescript) - An official TypeScript template for create-react-app.
-
-## License
-
-MIT © [Sung M. Kim](https://sung.codes)
+[MIT License](LICENSE) 2021 Yosef Beder
