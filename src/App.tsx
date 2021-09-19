@@ -31,10 +31,12 @@ function App() {
   let stats: Stats[];
 
   if (state.status === Status.ready || state.status === Status.finished) {
-    const speed = Math.round(state.typed.length / 5 / (state.time / 60));
+    const speed = Math.round(state.typed.trim().length / 5 / (state.time / 60));
     const accuracy =
       Math.round(
-        100 - (state.errors / (state.typed.length - state.errors || 1)) * 100,
+        100 -
+          (state.errors / (state.typed.trim().length - state.errors || 1)) *
+            100,
       ) || 0;
 
     stats = [
