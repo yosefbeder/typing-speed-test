@@ -166,7 +166,11 @@ function App() {
         className="w-full rounded-md rounded-t-none border-t border-gray-400 bg-blue-50 resize-none h-40 text-gray-700 p-2 focus:outline-none
       hover:border-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:border-gray-500 disabled:cursor-not-allowed"
         disabled={state.status !== Status.ready}
-        value={state.status === Status.ready ? state.typed : ''}
+        value={
+          state.status === Status.ready || state.status === Status.finished
+            ? state.typed
+            : ''
+        }
         onChange={e => {
           if (state.status === Status.ready) {
             const value = e.target.value;
