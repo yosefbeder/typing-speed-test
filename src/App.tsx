@@ -31,7 +31,9 @@ function App() {
   let stats: Stats[];
 
   if (state.status === Status.ready || state.status === Status.finished) {
-    const speed = Math.round(state.typed.trim().length / 5 / (state.time / 60));
+    const speed = Math.round(
+      (state.typed.trim().length - state.curErrors) / 5 / (state.time / 60),
+    );
     const accuracy =
       Math.round(
         100 -
@@ -184,7 +186,15 @@ function App() {
 
             dispatch({
               type: Actions.type,
-              payload: value,
+              payload: {
+                typed: value,
+                curErrors: state.typed
+                  .split('')
+                  .reduce(
+                    (acc, l, i) => (l === state.quote[i] ? acc : acc + 1),
+                    0,
+                  ),
+              },
             });
 
             if (value.length === state.quote.length)

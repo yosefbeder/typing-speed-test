@@ -14,6 +14,7 @@ interface EmptyStateType {
   typed: null;
   errors: 0;
   time: 0;
+  curErrors: 0;
 }
 
 interface FilledStateType {
@@ -22,6 +23,7 @@ interface FilledStateType {
   typed: string;
   errors: number;
   time: number;
+  curErrors: number;
 }
 type StateType = EmptyStateType | FilledStateType;
 
@@ -30,7 +32,7 @@ type ActionType =
   | { type: Actions.fail }
   | { type: Actions.success; payload: string }
   | { type: Actions.finish }
-  | { type: Actions.type; payload: string }
+  | { type: Actions.type; payload: { curErrors: number; typed: string } }
   | { type: Actions.tick }
   | { type: Actions.commit };
 
@@ -40,6 +42,7 @@ export const initialState: StateType = {
   typed: null,
   errors: 0,
   time: 0,
+  curErrors: 0,
 };
 
 const reducer = (state: StateType, action: ActionType): StateType => {
@@ -50,6 +53,7 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: null,
       errors: 0,
       time: 0,
+      curErrors: 0,
     };
 
   if (action.type === Actions.fail)
@@ -59,6 +63,7 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: null,
       errors: 0,
       time: 0,
+      curErrors: 0,
     };
 
   if (action.type === Actions.success)
@@ -68,6 +73,7 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: '',
       errors: 0,
       time: 0,
+      curErrors: 0,
     };
 
   if (action.type === Actions.finish)
@@ -77,15 +83,17 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: state.typed as string,
       errors: state.errors,
       time: state.time,
+      curErrors: state.curErrors,
     };
 
   if (action.type === Actions.type)
     return {
       status: Status.ready,
       quote: state.quote as string,
-      typed: action.payload,
+      typed: action.payload.typed,
       errors: state.errors,
       time: state.time,
+      curErrors: action.payload.curErrors,
     };
 
   if (action.type === Actions.commit)
@@ -95,6 +103,7 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: state.typed as string,
       errors: state.errors + 1,
       time: state.time,
+      curErrors: state.curErrors,
     };
 
   if (action.type === Actions.tick)
@@ -104,6 +113,7 @@ const reducer = (state: StateType, action: ActionType): StateType => {
       typed: state.typed as string,
       errors: state.errors,
       time: state.time + 0.1,
+      curErrors: state.curErrors,
     };
 
   return state;
