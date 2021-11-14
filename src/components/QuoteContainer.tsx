@@ -1,67 +1,67 @@
-import React from 'react';
-import { AnimateSharedLayout, motion, useCycle } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import useInterval from '../hooks/useInterval';
 
 interface QuoteContainerProps {
-  quote: string;
-  typed: string;
-  isTyping: boolean;
+	quote: string;
+	typed: string;
+	isTyping: boolean;
 }
 
-const variants: any = {
-  visible: {
-    opacity: 1,
-  },
-  hidden: {
-    opacity: 0,
-  },
-};
-
 const QuoteContainer: React.FC<QuoteContainerProps> = ({
-  quote,
-  typed,
-  isTyping,
+	quote,
+	typed,
+	isTyping,
 }) => {
-  const [animation, cycle] = useCycle('visible', 'hidden');
+	const [caretPos, setCaretPos] = useState({ x: 8, y: 10.5 });
+	const curCharacterRef = useRef<HTMLSpanElement>(null);
+	const containerRef = useRef<HTMLParagraphElement>(null);
+	const [opacity, setOpacity] = useState(0);
 
-  return (
-    <AnimateSharedLayout>
-      <p className="text-gray-400 p-2 select-none">
-        <span className="text-gray-700 select-text">
-          {quote
-            .slice(0, typed.length)
-            .split('')
-            .map((l, i) =>
-              l === typed[i] ? (
-                l
-              ) : (
-                <span
-                  key={i}
-                  className="text-red-500 border-b-2 border-red-500"
-                >
-                  {l}
-                </span>
-              ),
-            )}
-        </span>
-        <span className="relative">
-          {quote[typed.length]}
-          <motion.div
-            layoutId="caret"
-            variants={variants}
-            initial="hidden"
-            transition={{
-              opacity: { type: 'spring' },
-              default: { type: 'tween', duration: 0.15, ease: 'easeOut' },
-            }}
-            animate={isTyping ? 'visible' : animation}
-            onAnimationComplete={() => cycle()}
-            className="absolute left-0 top-0 h-full w-0.5 bg-blue-400"
-          ></motion.div>
-        </span>
-        {quote.slice(typed.length + 1)}
-      </p>
-    </AnimateSharedLayout>
-  );
+	useEffect(() => {
+		const containerPos = containerRef.current!.getBoundingClientRect();
+		const curCharacterPos = curCharacterRef.current!.getBoundingClientRect();
+
+		setCaretPos({
+			x: curCharacterPos.x - containerPos.x,
+			y: curCharacterPos.y - containerPos.y,
+		});
+	}, [typed]);
+
+	useInterval(() => {
+		if (isTyping) {
+			setOpacity(1);
+		} else {
+			setOpacity(prev => (prev === 1 ? 0 : 1));
+		}
+	}, 500);
+
+	return (
+		<p ref={containerRef} className="relative text-gray-400 p-2 select-none">
+			<span className="text-gray-700 select-text">
+				{quote
+					.slice(0, typed.length)
+					.split('')
+					.map((l, i) =>
+						l === typed[i] ? (
+							l
+						) : (
+							<span key={i} className="text-red-500 border-b-2 border-red-500">
+								{l}
+							</span>
+						),
+					)}
+			</span>
+			<span ref={curCharacterRef}>{quote[typed.length]}</span>
+			<div
+				className="caret"
+				style={{
+					transform: `translate3d(${caretPos.x}px, ${caretPos.y}px, 0)`,
+					opacity,
+				}}
+			/>
+			{quote.slice(typed.length + 1)}
+		</p>
+	);
 };
 
 export default QuoteContainer;
